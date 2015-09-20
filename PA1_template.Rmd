@@ -1,25 +1,67 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "Peer Assessment 1: Reproducible Research"
+author: "irv"
+date: "Sunday, September 20, 2015"
+output: html_document
 ---
 
+##Assumptions##
+1. The data file is in the same folder as this document
+2. Required packages are available for loading. Those include:
+2.1. sqldf
+2.2. nnet
+3. That's all. thanks for playing!
 
-## Loading and preprocessing the data
+## Housekeeping ##
 
+First, we're going to call the required packages and read the file. (Not shown)
+```{r, echo=TRUE}
+    # trun off annoying messages
+    options(warn=-1)
+    suppressMessages(library(sqldf))
+    suppressMessages(library(nnet))
+    library(sqldf)
+    library(nnet)
+    csv <- read.csv("activity.csv")
+```
+Next, we're going to pull row and column names that will be reused several times in this assignment.
 
+```{r, echo=TRUE}
+    dates <- unique(as.character(csv$date))
+    intervals <- unique(csv$interval)
+```
 
-## What is mean total number of steps taken per day?
+## Part 1 ##
+### What is mean total number of steps taken per day? ###
 
+For this portion of the process, the data will be rshaped into a form that seems to work a littl ebetter for the analysis (wide rather than long). Following tidy principles, there will be one observation per row.
 
+```{r, echo=TRUE}
+    csv_wide <- data.frame(matrix(ncol=length(dates), nrow=length(intervals)))
+    rownames(csv_wide) <- intervals
+    colnames(csv_wide) <- dates
 
-## What is the average daily activity pattern?
+    # This is a brute force reshape to make the data wide instead of long
+    # I tried working with reshape, reshape2 and tidyr for a couple hours
+    # and got nowhere, so I'm doing the simplistic method instead.
+    # All my years as a programmer did not prepare me well for R!
+    for (d in dates){
+        # got a date. Sum every rsteps row in csv that matches
+        term <- paste("SELECT steps from csv where date='", d, "'", sep="")
+        dt <- sqldf(term)
+        csv_wide[,d] <- dt
+    }
+```
+This gets us to the solutions portion of our program!
 
+```{R, echo=TRUE}
+    date_sums <- colSums(csv_wide, na.rm = TRUE)
+    # It look slike the histogram might be flipped!
+    # steps taken on the Y axis
+    hist(date_sums)
+```
 
+The above histogram agrees with the calculated results:
 
-## Imputing missing values
-
-
-
-## Are there differences in activity patterns between weekdays and weekends?
+- The mean number of steps per day is `r mean(date_sums)`.
+- The median number of steps per day is `r format(median(date_sums), scientific = FALSE)`.
