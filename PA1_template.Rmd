@@ -15,13 +15,14 @@ This document describes questions asked about the activities shown by the data a
 
 1. The data file is in the same folder as this document
 2. Required packages are available for loading. Those include:
-2.1. sqldf
-2.2. nnet
+  1. sqldf
+  2. nnet
 3. That's all. thanks for playing!
 
 ## Housekeeping ##
 
-First, we're going to call the required packages and read the file. (Not shown)
+First, we're going to call the required packages and read the file.
+
 ```{r, echo=TRUE}
     # turn off annoying messages
     options(warn=-1)
@@ -75,8 +76,8 @@ This gets us to the solutions portion of our program!
 
 The above histogram agrees with the calculated results:
 
-- The mean number of steps per day is `r ma`.
-- The median number of steps per day is `r format(md, scientific = FALSE)`.
+- The mean number of steps per day is **`r ma`.**
+- The median number of steps per day is **`r format(md, scientific = FALSE)`**.
 
 ## Part 2 ##
 ### What is the average daily activity pattern? ###
@@ -85,32 +86,45 @@ The answer to this question can be derived from the data used above.
 
 ```{r, echo=TRUE}
     interval_means <- rowMeans(csv_wide, na.rm = TRUE)
-    plot.ts(interval_means, type="l")
+    plot.ts(interval_means, type="l", ylab="Mean Steps/Day", xlab="Interval", axes=FALSE)
+    
+    # The plotter counts intervals instead of using the names
+    # plus there isn't enough room to show them all, so, we'll generate a subset
+    par(cex=0.7)
+    xn <- seq(0, 13) * 25
+    yn <- c(0, 50, 100, 150, 200)
+    axis(1, at=xn, labels= as.character(xn * 5))
+    axis(2, at=yn, labels=as.character(yn))
+
+    # repair
+    par(cex=1.0)
 ```
 
-*Question 2:* Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+The overall pattern is for a spike in activity early in the day, followed by an uneven dropoff until (as discussed above) the interval at 1380 minutes or so, when data becomes too spotty to analyze.
+
+**Question:** Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
 
 The answer to this question is found in the interval means calculated above.
 
 ```{R, echo=TRUE}
     location_of_max <- which.is.max(interval_means)
 ```
-Answer: Interval `r names(interval_means)[location_of_max]` is the one with the most steps, on average, across all days, with a total of `r interval_means[location_of_max]`.
+**Answer:** Interval **`r names(interval_means)[location_of_max]`** is the one with the most steps, on average, across all days, with a total of **`r interval_means[location_of_max]`**.
 
 ## Part 3 ##
 ### Imputing missing values ###
 
-*Question 1:* How many missing values in the dataset?
+**Question:** How many missing values in the dataset?
 
 ```{R, echo=TRUE}
     missings <- is.na(csv$steps)
 ```
 
-*Answer:* There are `r length(which(missings == TRUE))` values missing from the dataset.
+**Answer:** There are `r length(which(missings == TRUE))` values missing from the dataset.
 
-*Questions 2 and 3:* Devise a strategy for dealing with missing values and create a new dataset to implement it.
+**Questions:** Devise a strategy for dealing with missing values and create a new dataset to implement it.
 
-*Answer:* We can insert the previously calculated interval means in place of NAs, as follows:
+**Answer:** We can insert the previously calculated interval means in place of NAs, as follows:
 
 ```{R, echo=TRUE}
     # This function will be called once per row on the original dataset
@@ -124,7 +138,7 @@ Answer: Interval `r names(interval_means)[location_of_max]` is the one with the 
 
     # AGAIN, I tried to find a more elegant R-ish way to do this
     # but couldn't quite get it to work, and there's a deadline
-    # Sooooo, brtue force wins again:
+    # Sooooo, brute force wins again:
     csv_imputed <- csv
     for (i in 1:length(csv_imputed$steps)) {
         csv_imputed[i,] <- imputer(csv_imputed[i,], interval_means)
@@ -146,19 +160,30 @@ Answer: Interval `r names(interval_means)[location_of_max]` is the one with the 
     
     # do the calculations needed to finish this section:
     date_sums_i <- colSums(csvi_wide)  # remove NAs no longer needed
-    # It looks like the histogram might be flipped!
-    hist(date_sums_i)    
+    hist(date_sums_i, main="Steps per day", xlab="Steps", ylab="Days", 
+                      cex=0.7, col="bisque", axes=FALSE)
+    xax <- c(0, 5000, 10000, 15000, 20000, 25000)
+    yax <- c(0, 5, 10, 15, 20, 25, 30, 35)
+    par(cex=0.8)
+    axis(1, at=xax, labels=as.character(xax))
+    axis(2, at=yax, labels=as.character(yax))
+    
+    ma_i <- mean(date_sums_i)
+    md_i <- median(date_sums_i)
+    # repair:
+    par(cex=1.0)
+
 ```
 
-*Question 4:* How do the mean and median from this calculation compare with the ones done previously (before missing values were replaced)?
+**Question:** How do the mean and median from this calculation compare with the ones done previously (before missing values were replaced)?
 
 - The mean number of steps per day from the imputed data is `r format(mean(date_sums_i), scientific=FALSE)` which is a little higher from the previous value of `r ma`.
-- The median number of steps per day for the imputed data is `r format(median(date_sums_i), scientific=FALSE)` which is higher than the previously calculaed median of `r format(md, scientific=FALSE)` but identical to the mean, (which makes perfect sense since daily means were substituted for the missing data).
+- The median number of steps per day for the imputed data is `r format(median(date_sums_i), scientific=FALSE)` which is higher than the previously calculated median of `r format(md, scientific=FALSE)` but identical to the mean, (which makes perfect sense since daily means were substituted for the missing data).
 
 ## Part 4 ##
 ### Are there differences in activity patterns between weekdays and weekends? ###
 
-The following function will help create the needed factor variable that we'll use to separate weekends from wqeekdays.
+The following function will help create the needed factor variable that we'll use to separate weekends from weekdays.
 
 ```{R, echo=TRUE}
     weekend_or_not <- function(date_string){
@@ -172,7 +197,7 @@ The following function will help create the needed factor variable that we'll us
 
 ```
 
-Now to reshape the imputed dataset into a form that will make answering the question quite simple.
+Now to reshape the imputed dataset into a form that will make answering the question simple.
 
 ```{R, echo=TRUE}
     new_f <- data.frame(matrix(nrow=length(dates), ncol=length(intervals)))
@@ -213,7 +238,7 @@ title(main="weekend", ylab="Number of Steps", cex.lab=label_sz)
 
 yx2 <- c(1000,2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000)
 xx2 <- c(0, 500, 1000, 1500, 2000, 2500)
-par(mar=c(4,3,1,1))
+par(mar=c(4,4,1,1))
 plot.ts(colnames(weekday_data), colSums(weekday_data), type="l", axes=FALSE, xlab="", ylab="")
 axis(2, at=yx2, labels=as.character(yx2))
 axis(1, at=xx2, labels=as.character(xx2))
