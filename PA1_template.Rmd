@@ -4,8 +4,15 @@ author: "irv"
 date: "Sunday, September 20, 2015"
 output: html_document
 ---
+##Introduction##
+
+The problem presented was to perform simple analysis on movement data from a simple health tracking device such as a FitBit or similar item. Data provided (in csv format) gives a count of steps walked in the previous 5 minutes over a period of two months.
+
+This document describes questions asked about the activities shown by the data and the methods used to answer them.
+
 
 ##Assumptions##
+
 1. The data file is in the same folder as this document
 2. Required packages are available for loading. Those include:
 2.1. sqldf
@@ -16,7 +23,7 @@ output: html_document
 
 First, we're going to call the required packages and read the file. (Not shown)
 ```{r, echo=TRUE}
-    # trun off annoying messages
+    # turn off annoying messages
     options(warn=-1)
     suppressMessages(library(sqldf))
     suppressMessages(library(nnet))
@@ -52,13 +59,14 @@ For this portion of the process, the data will be rshaped into a form that seems
         csv_wide[,d] <- dt
     }
 ```
+
 This gets us to the solutions portion of our program!
 
 ```{R, echo=TRUE}
     date_sums <- colSums(csv_wide, na.rm = TRUE)
     # It look slike the histogram might be flipped!
     # steps taken on the Y axis
-    hist(date_sums)
+    hist(date_sums, main="Total Steps Per Day", xlab="Number of Steps", ylab="Days occurred", col="yellow")
     
     # Store the mean and median for later use
     ma <- mean(date_sums)
@@ -79,6 +87,7 @@ The answer to this question can be derived from the data used above.
     interval_means <- rowMeans(csv_wide, na.rm = TRUE)
     plot.ts(interval_means, type="l")
 ```
+
 *Question 2:* Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
 
 The answer to this question is found in the interval means calculated above.
@@ -186,16 +195,36 @@ Now to reshape the imputed dataset into a form that will make answering the ques
 ```
 And display the plots.
 
-```{R, echo=TRUE}
+```{R, echo=TRUE, fig.width=8.5, fig.height=5.0, fig.align="center"}
 
 weekend_data <- subset(new_f, day_type == "weekend", select=seq(1:288))
 weekday_data <- subset(new_f, day_type == "weekday", select=seq(1:288))
-par(mfrow=c(2,1))
-plot.ts(colnames(weekend_data), colSums(weekend_data), type="l")
-plot.ts(colnames(weekday_data), colSums(weekday_data), type="l")
+
+# and now the plot. Sticking with standard plot, even though it's not as pretty. 
+# I get better results when I keep it simple.
+# Though I'm giving up the title background color from the example.
+par(mfrow=c(2,1), mar=c(1,4,1,1), cex=0.75)
+label_sz = 1.2
+
+yx1 <- c(0, 500, 1000, 1500, 2000, 2500)
+plot.ts(colnames(weekend_data), colSums(weekend_data), type="l", axes=FALSE, xlab="", ylab="")
+axis(2, at=yx1, labels=as.character(yx1))
+title(main="weekend", ylab="Number of Steps", cex.lab=label_sz)
+
+yx2 <- c(1000,2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000)
+xx2 <- c(0, 500, 1000, 1500, 2000, 2500)
+par(mar=c(4,3,1,1))
+plot.ts(colnames(weekday_data), colSums(weekday_data), type="l", axes=FALSE, xlab="", ylab="")
+axis(2, at=yx2, labels=as.character(yx2))
+axis(1, at=xx2, labels=as.character(xx2))
+title(main="weekday")
+title(xlab="Interval", cex.lab=label_sz, ylab="Number of Steps")
+
 ```
 
-## Thus endeth the assignment ##
+**Note** The differing scale for the weekday plot as well as the differing patterns. while weekends seem to show a more sustained pattern of activity over the course of a day, there are about 4 times as many steps taken on weekdays than on weekends, indicating that the overall acitivity level on weekdays is much higher!
+
+### Thus endeth the assignment ###
 
 
 
