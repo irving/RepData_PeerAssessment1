@@ -163,8 +163,39 @@ The following function will help create the needed factor variable that we'll us
 
 ```
 
+Now to reshape the imputed dataset into a form that will make answering the question quite simple.
 
+```{R, echo=TRUE}
+    new_f <- data.frame(matrix(nrow=length(dates), ncol=length(intervals)))
+    rownames(new_f) <- dates
+    colnames(new_f) <- intervals
+    factor_col <- c()
+    for (d in dates) {
+        term <- paste("SELECT steps from csv_imputed where date='", d, "'", sep="")
+        new_col <- sqldf(term)
+        
+        # new_row is actually a data frame, so access it this way
+        new_f[d,] <- new_col[,1]
+        factor_col <- c(factor_col, weekend_or_not(d))
+    }
+    
+    # have to add the factors all at once
+    # or else R coerces all the values in the column to chraracter
+    # This way keeps them as numbers
+    new_f$day_type <- factor(factor_col, levels=c("weekend", "weekday"))
+```
+And display the plots.
 
+```{R, echo=TRUE}
+
+weekend_data <- subset(new_f, day_type == "weekend", select=seq(1:288))
+weekday_data <- subset(new_f, day_type == "weekday", select=seq(1:288))
+par(mfrow=c(2,1))
+plot.ts(colnames(weekend_data), colSums(weekend_data), type="l")
+plot.ts(colnames(weekday_data), colSums(weekday_data), type="l")
+```
+
+## Thus endeth the assignment ##
 
 
 
