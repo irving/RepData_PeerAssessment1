@@ -59,12 +59,16 @@ This gets us to the solutions portion of our program!
     # It look slike the histogram might be flipped!
     # steps taken on the Y axis
     hist(date_sums)
+    
+    # Store the mean and median for later use
+    ma <- mean(date_sums)
+    md <- median(date_sums)
 ```
 
 The above histogram agrees with the calculated results:
 
-- The mean number of steps per day is `r mean(date_sums)`.
-- The median number of steps per day is `r format(median(date_sums), scientific = FALSE)`.
+- The mean number of steps per day is `r ma`.
+- The median number of steps per day is `r format(md, scientific = FALSE)`.
 
 ## Part 2 ##
 ### What is the average daily activity pattern? ###
@@ -83,5 +87,84 @@ The answer to this question is found in the interval means calculated above.
     location_of_max <- which.is.max(interval_means)
 ```
 Answer: Interval `r names(interval_means)[location_of_max]` is the one with the most steps, on average, across all days, with a total of `r interval_means[location_of_max]`.
+
+## Part 3 ##
+### Imputing missing values ###
+
+*Question 1:* How many missing values in the dataset?
+
+```{R, echo=TRUE}
+    missings <- is.na(csv$steps)
+```
+
+*Answer:* There are `r length(which(missings == TRUE))` values missing from the dataset.
+
+*Questions 2 and 3:* Devise a strategy for dealing with missing values and create a new dataset to implement it.
+
+*Answer:* We can insert the previously calculated interval means in place of NAs, as follows:
+
+```{R, echo=TRUE}
+    # This function will be called once per row on the original dataset
+    imputer <- function(row, means) {
+        if (is.na(row["steps"])) {
+            row["steps"] <- means[toString(row["interval"])]
+        }
+        
+        row
+    }
+
+    # AGAIN, I tried to find a more elegant R-ish way to do this
+    # but couldn't quite get it to work, and there's a deadline
+    # Sooooo, brtue force wins again:
+    csv_imputed <- csv
+    for (i in 1:length(csv_imputed$steps)) {
+        csv_imputed[i,] <- imputer(csv_imputed[i,], interval_means)
+    }
+    
+    # NOW reshape the data the way it was done in part 1
+    # and calculate and display the same things
+    # we'll reuse the intervals and dates from before
+    csvi_wide <- data.frame(matrix(ncol=length(dates), nrow=length(intervals)))
+    colnames(csvi_wide) <- dates
+    rownames(csvi_wide) <- intervals
+
+    for (d in dates){
+        # got a date. Sum every rsteps row in csv that matches
+        term <- paste("SELECT steps from csv_imputed where date='", d, "'", sep="")
+        dt <- sqldf(term)
+        csvi_wide[,d] <- dt
+    }
+    
+    # do the calculations needed to finish this section:
+    date_sums_i <- colSums(csvi_wide)  # remove NAs no longer needed
+    # It looks like the histogram might be flipped!
+    hist(date_sums_i)    
+```
+
+*Question 4:* How do the mean and median from this calculation compare with the ones done previously (before missing values were replaced)?
+
+- The mean number of steps per day from the imputed data is `r format(mean(date_sums_i), scientific=FALSE)` which is a little higher from the previous value of `r ma`.
+- The median number of steps per day for the imputed data is `r format(median(date_sums_i), scientific=FALSE)` which is higher than the previously calculaed median of `r format(md, scientific=FALSE)` but identical to the mean, (which makes perfect sense since daily means were substituted for the missing data).
+
+## Part 4 ##
+### Are there differences in activity patterns between weekdays and weekends? ###
+
+The following function will help create the needed factor variable that we'll use to separate weekends from wqeekdays.
+
+```{R, echo=TRUE}
+    weekend_or_not <- function(date_string){
+        day <- weekdays(as.Date(date_string))
+        which_day = "weekday"
+        if (day == "Saturday" || day == "Sunday") {
+            which_day = "weekend"
+        }
+        which_day
+    }
+
+```
+
+
+
+
 
 
