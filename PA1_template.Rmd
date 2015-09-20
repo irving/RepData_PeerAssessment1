@@ -65,3 +65,23 @@ The above histogram agrees with the calculated results:
 
 - The mean number of steps per day is `r mean(date_sums)`.
 - The median number of steps per day is `r format(median(date_sums), scientific = FALSE)`.
+
+## Part 2 ##
+### What is the average daily activity pattern? ###
+
+The answer to this question can be derived from the data used above.
+
+```{r, echo=TRUE}
+    interval_means <- rowMeans(csv_wide, na.rm = TRUE)
+    plot.ts(interval_means, type="l")
+```
+*Question 2:* Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+
+The answer to this question is found in the interval means calculated above.
+
+```{R, echo=TRUE}
+    location_of_max <- which.is.max(interval_means)
+```
+Answer: Interval `r names(interval_means)[location_of_max]` is the one with the most steps, on average, across all days, with a total of `r interval_means[location_of_max]`.
+
+
